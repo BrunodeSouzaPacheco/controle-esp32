@@ -1,12 +1,78 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Primeira Página</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESP32 Painel Global</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; font-family: Inter, sans-serif; background: linear-gradient(135deg, #0b1020, #0e1628); color: rgba(255,255,255,0.92); }
+    .wrap { height: 100%; display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+    .card { width: min(420px, 100%); padding: 22px; border-radius: 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); backdrop-filter: blur(10px); }
+    .title { font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.65); }
+    .big { margin-top: 10px; font-size: 2.2rem; font-weight: 800; }
+    .status { margin-top: 6px; font-size: 0.9rem; color: rgba(255,255,255,0.85); font-weight: 600;}
+    .row { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { padding: 14px 12px; font-size: 1rem; font-weight: 600; border: 0; border-radius: 12px; cursor: pointer; transition: transform 0.05s ease; color: white;}
+    button:active { transform: scale(0.98); }
+    .ldr { background: #f39c12; }
+    .pir { background: #3498db; }
+  </style>
 </head>
 <body>
-    <h1>Olá, Mundo!</h1>
-    <p>Este é um parágrafo básico de HTML.</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="title">Painel de Controle Cloud</div>
+      <div class="big">Luz: <span id="stateText">...</span></div>
+      <div class="status" id="statusLine">Conectando ao Firebase...</div>
+      
+      <div class="row">
+        <button class="ldr" id="btnLDR">Usar LDR</button>
+        <button class="pir" id="btnPIR">Usar PIR</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Importando as ferramentas do Firebase (Atualizado para a versão 12.13.0 que você gerou)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    // AS SUAS CHAVES DO FIREBASE:
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnlFKyLTLHK7amxUS94IBIEoxcfIIyt64",
+      authDomain: "meuprojetoesp32-bd919.firebaseapp.com",
+      databaseURL: "https://meuprojetoesp32-bd919-default-rtdb.firebaseio.com",
+      projectId: "meuprojetoesp32-bd919",
+      storageBucket: "meuprojetoesp32-bd919.firebasestorage.app",
+      messagingSenderId: "1052199451280",
+      appId: "1:1052199451280:web:c5af726d12a94c2a273615"
+    };
+
+    // Inicializando a conexão
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Quando você clicar nos botões, o site envia o comando para o banco de dados
+    document.getElementById('btnLDR').onclick = () => set(ref(db, 'modo_sistema'), 2);
+    document.getElementById('btnPIR').onclick = () => set(ref(db, 'modo_sistema'), 3);
+
+    // Fica escutando para ver se a lâmpada está acesa ou apagada
+    onValue(ref(db, 'estado_luz'), (snapshot) => {
+      const isOn = snapshot.val();
+      document.getElementById('stateText').textContent = isOn === 1 ? 'ACESA' : 'APAGADA';
+      document.getElementById('stateText').style.color = isOn === 1 ? '#2ecc71' : '#e74c3c';
+    });
+
+    // Fica escutando qual é o modo atual
+    onValue(ref(db, 'modo_sistema'), (snapshot) => {
+      const modo = String(snapshot.val());
+      const statusLine = document.getElementById('statusLine');
+      
+      if (modo === '2') statusLine.textContent = 'Modo Atual: Sensor de Luz (LDR)';
+      else if (modo === '3') statusLine.textContent = 'Modo Atual: Sensor de Movimento (PIR)';
+      else statusLine.textContent = 'Modo Atual: ' + modo;
+    });
+  </script>
 </body>
 </html>
